@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <title>Rotary Dial App Launcher</title>
+  <style>
+   body {
+  margin: 0;
+  background-color: #111; /* lightest red */
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  user-select: none;
+}
+
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dial {
+  position: absolute;
+  top: 50%;
+  left: 75%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #ff3333 40%, #00001a);
+  border: 8px solid #4d0000; /* Dark red border */
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  cursor: grab;
+}
+
+
+
+    .dial:active {
+      cursor: grabbing;
+    }
+
+    .holes {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .hole {
+      position: absolute;
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background-color: #000;
+      border: 3px solid #777;
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    /* Center app icon container */
+    .center-app {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background-color: #ffb3b3;
+      border: 5px solid #330000;
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255,255,255,0.2);
+      transition: background-color 0.3s ease;
+      user-select: none;
+      z-index: 10;
+    }
+
+    .center-app:hover {
+      background-color: #990000;
+    }
+
+    .center-app img {
+      width: 90px;
+      height: 90px;
+      border-radius: 20px;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="dial" id="rotaryDial">
+      <div class="holes" id="holesContainer"></div>
+      <div class="center-app" id="centerApp">
+        <img id="appIcon" src="" alt="App Icon" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const holesContainer = document.getElementById("holesContainer");
+    const dial = document.getElementById("rotaryDial");
+    const centerApp = document.getElementById("centerApp");
+    const appIcon = document.getElementById("appIcon");
+
+    const radius = 115;
+    const center = 160;
+    const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+
+    // Place holes with numbers
+    holesContainer.innerHTML = "";
+    numbers.forEach((num, i) => {
+      const angle = (i * 36 - 90) * (Math.PI / 180);
+      const x = center + radius * Math.cos(angle) - 27.5;
+      const y = center + radius * Math.sin(angle) - 27.5;
+
+      const hole = document.createElement("div");
+      hole.className = "hole";
+      hole.style.left = `${x}px`;
+      hole.style.top = `${y}px`;
+      hole.innerText = num;
+
+      holesContainer.appendChild(hole);
+    });
+
+    // Apps list with icons and URLs
+    const apps = [
+      {
+        name: "YouTube",
+        icon: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg",
+        url: "https://www.youtube.com"
+      },
+      {
+        name: "ChatGPT",
+        icon: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+        url: "https://chat.openai.com"
+      },
+      {
+        name: "Prime Video",
+        icon: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",
+        url: "https://www.primevideo.com"
+      },
+      {
+        name: "Netflix",
+        icon: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+        url: "https://www.netflix.com"
+      },
+      {
+        name: "Hotstar",
+        icon: "https://pnghdpro.com/wp-content/themes/pnghdpro/download/social-media-and-brands/jiohotstar-app-logo-icon.png",
+        url: "https://www.hotstar.com"
+      },
+      {
+        name: "Amazon.in",
+        icon: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
+        url: "https://www.amazon.in"
+      },
+      {
+        name: "Zoom Meeting",
+        icon: "https://1000logos.net/wp-content/uploads/2021/06/Zoom-Logo-2014.png",
+        url: "https://zoom.us"
+      },
+
+    ];
+
+    // Current selected app index
+    let selectedAppIndex = 0;
+
+    // Show current app icon
+    function updateAppIcon() {
+      const app = apps[selectedAppIndex];
+      appIcon.src = app.icon;
+      appIcon.alt = app.name;
+      centerApp.title = `Open ${app.name}`;
+    }
+
+    updateAppIcon();
+
+    // Rotation handling
+    let isDragging = false;
+    let lastAngle = 0;
+    let totalRotation = 0;
+
+    function getAngle(x, y, centerX, centerY) {
+      return Math.atan2(y - centerY, x - centerX) * (180 / Math.PI);
+    }
+
+    dial.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      const rect = dial.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      lastAngle = getAngle(e.clientX, e.clientY, centerX, centerY);
+      dial.style.transition = 'none';
+    });
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+
+  const rect = dial.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const currentAngle = getAngle(e.clientX, e.clientY, centerX, centerY);
+
+  let delta = currentAngle - lastAngle;
+
+  if (delta > 180) delta -= 360;
+  if (delta < -180) delta += 360;
+
+  totalRotation += delta;
+  lastAngle = currentAngle;
+
+  // Rotate dial container
+  dial.style.transform = `translate(-50%, -50%) rotate(${totalRotation}deg)`;
+
+  // Counter-rotate center app icon so it stays upright
+  centerApp.style.transform = `translate(-50%, -50%) rotate(${-totalRotation}deg)`;
+
+  // Counter-rotate each hole to stay upright
+  const holes = holesContainer.querySelectorAll('.hole');
+  holes.forEach(hole => {
+    hole.style.transform = `rotate(${-totalRotation}deg)`;
+  });
+
+  // Calculate app index based on totalRotation
+  const appCount = apps.length;
+  const rotationPerApp = 360 / appCount;
+
+  // Normalize totalRotation to [0,360) and calculate app index
+  let normalizedRotation = ((totalRotation % 360) + 360) % 360;
+  let appIndex = Math.floor(normalizedRotation / rotationPerApp);
+
+  // Clamp appIndex to valid range
+  appIndex = appIndex % appCount;
+
+  // Update selected app if changed
+  if (appIndex !== selectedAppIndex) {
+    selectedAppIndex = appIndex;
+    updateAppIcon();
+  }
+});
+
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Clicking center opens the app url in a new tab
+    centerApp.addEventListener('click', () => {
+      const app = apps[selectedAppIndex];
+      window.open(app.url, "_blank");
+    });
+
+  </script>
+</body>
+</html>
+
+
